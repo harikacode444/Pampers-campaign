@@ -1,11 +1,16 @@
+// backend/server.js
 const express = require("express");
 const cors = require("cors");
+require("dotenv").config();
 
 // Enable importing TypeScript files at runtime
 require("ts-node").register({ transpileOnly: true });
 
-// Import Girl 1's AI orchestrator
-const { handleChat } = require("./ai/index"); // from ai/index.ts
+// AI orchestrator (Girl 1’s logic)
+const { handleChat } = require("./ai/index");
+
+// Braze client (mock or real)
+const { createMockCampaignInBraze } = require("./brazeClient");
 
 const app = express();
 const PORT = 4000;
@@ -14,12 +19,14 @@ const PORT = 4000;
 app.use(cors());
 app.use(express.json());
 
-// Health check route
-app.get("/api/health", (req, res) => {
+// Health check
+app.get("/api/health", (_req, res) => {
   res.json({ status: "ok" });
 });
 
-// Chat endpoint – now uses real AI
+// ==============================
+// 1. CHAT ENDPOINT (AI)
+// ==============================
 app.post("/api/chat", async (req, res) => {
   try {
     const { message } = req.body;
@@ -28,36 +35,61 @@ app.post("/api/chat", async (req, res) => {
       return res.status(400).json({ error: "message is required" });
     }
 
-    // Call Girl 1's TypeScript AI function
+    console.log("💬 /api/chat received brief:", message);
+
     const result = await handleChat(message);
-    // result should be: { spec, journey, messages, qa }
+    // result contains: { spec, journey, messages, qa }
+
+    console.log("✨ AI generated campaign:", result?.spec?.campaign_name);
+
     res.json(result);
   } catch (err) {
-    console.error("Error in /api/chat:", err);
+    console.error("❌ Error in /api/chat:", err);
     res.status(500).json({ error: "Internal server error" });
   }
 });
 
-app.post("/api/go-live", (req, res) => {
-  // Expect the same shape the frontend gets from /api/chat
+// ==============================
+// 2. GO LIVE ENDPOINT (Braze)
+// ==============================
+app.post("/api/go-live", async (req, res) => {
   const { spec, journey, messages, qa } = req.body;
 
-  console.log("Go-live called with:");
-  console.log("spec:", spec);
-  console.log("journey:", journey);
-  console.log("messages:", messages);
-  console.log("qa:", qa);
+  console.log("\n🚀 === GO LIVE REQUEST ===");
+  console.log("📘 spec:", spec);
+  console.log("🛠 journey:", journey?.steps?.length, "steps");
+  console.log("✉️  messages:", Object.keys(messages || {}).length, "languages");
+  console.log("🧪 QA passed:", qa?.passed);
+  console.log("=========================\n");
 
-  // Here you could call Braze API if you want.
-  res.json({
-    status: "ok",
-    brazeCampaignId: "mock_campaign_001",
-    message: "Campaign created (mock).",
-  });
+  try {
+    // Try to send campaign to Braze
+    const brazeResult = await createMockCampaignInBraze(spec);
+
+    res.json({
+      status: brazeResult.success ? "ok" : "simulated",
+      brazeCampaignId: brazeResult.data?.campaign_id || "mock_campaign_001",
+      brazeRaw: brazeResult,
+      message: brazeResult.success
+        ? "Campaign created in Braze (demo)."
+        : "Braze call skipped or failed — simulated campaign created.",
+    });
+  } catch (err) {
+    console.error("❌ Error in /api/go-live:", err);
+    res.status(500).json({
+      status: "error",
+      message: "Failed to create campaign",
+    });
+  }
 });
 
+// ==============================
+// 3. HYPERCARE (Mock Analytics)
+// ==============================
 app.get("/api/hypercare/:campaignId", (req, res) => {
   const { campaignId } = req.params;
+
+  console.log("📊 Hypercare requested for:", campaignId);
 
   const stats = {
     sends: 4200,
@@ -80,12 +112,14 @@ app.get("/api/hypercare/:campaignId", (req, res) => {
   });
 });
 
-// Start server only if this file is run directly
+// ==============================
+// Start Server
+// ==============================
 if (require.main === module) {
   app.listen(PORT, () => {
-    console.log(`Server is running on http://localhost:${PORT}`);
+    console.log(`\n🔥 Backend running on http://localhost:${PORT}`);
+    console.log("   Health check → /api/health\n");
   });
 }
 
-// Export app for testing
 module.exports = app;
