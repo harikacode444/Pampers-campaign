@@ -31,6 +31,14 @@ export const getActiveCampaigns = (): SavedCampaign[] => {
   return data ? JSON.parse(data) : [];
 };
 
+// Get a campaign by ID (searches both drafts and active)
+export const getCampaignById = (id: string): SavedCampaign | null => {
+  const drafts = getDraftCampaigns();
+  const active = getActiveCampaigns();
+  const allCampaigns = [...drafts, ...active];
+  return allCampaigns.find(c => c.id === id) || null;
+};
+
 // Save a draft campaign
 export const saveDraftCampaign = (
   brief: string,
@@ -281,6 +289,7 @@ export const initializeMockData = () => {
         createdAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
         status: "active",
         goLiveResult: {
+          status: "ok",
           brazeCampaignId: "braze_raf_001",
           brazeRaw: {},
           message: "Campaign launched successfully",
@@ -358,6 +367,7 @@ export const initializeMockData = () => {
         createdAt: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString(),
         status: "active",
         goLiveResult: {
+          status: "ok",
           brazeCampaignId: "braze_xmas_001",
           brazeRaw: {},
           message: "Campaign launched successfully",

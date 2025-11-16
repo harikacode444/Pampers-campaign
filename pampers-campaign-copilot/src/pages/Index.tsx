@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { chatWithCopilot, goLive, fetchHypercare, checkBackendHealth } from "@/lib/api";
 import { Sidebar } from "@/components/Sidebar";
 import { ChatSection } from "@/components/ChatSection";
@@ -7,12 +7,13 @@ import { SimulationSection } from "@/components/SimulationSection";
 import { QASection } from "@/components/QASection";
 import { GoLiveSection } from "@/components/GoLiveSection";
 import { HypercareSection } from "@/components/HypercareSection";
-import { saveDraftCampaign, activateCampaign } from "@/lib/campaignStorage";
+import { saveDraftCampaign, activateCampaign, getCampaignById } from "@/lib/campaignStorage";
 import { getFriendlyCampaignName } from "@/lib/campaignNames";
 import type { ChatResponse, GoLiveResponse, HypercareResponse } from "@/lib/api";
 
 const Index = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   
   // State management
   const [brief, setBrief] = useState<string>("");
@@ -28,6 +29,28 @@ const Index = () => {
   const [backendOnline, setBackendOnline] = useState<boolean | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [currentDraftId, setCurrentDraftId] = useState<string | null>(null);
+  
+  // Load campaign details if campaignId is provided in navigation state
+  useEffect(() => {
+    const campaignId = (location.state as { campaignId?: string })?.campaignId;
+    if (campaignId) {
+      const campaign = getCampaignById(campaignId);
+      if (campaign) {
+        setBrief(campaign.brief);
+        setSpec(campaign.spec);
+        setJourney(campaign.journey);
+        setMessages(campaign.messages);
+        setQa(campaign.qa);
+        setGoLiveResult(campaign.goLiveResult || null);
+        setCurrentDraftId(campaign.status === "draft" ? campaign.id : null);
+        setSuccessMessage(`Loaded campaign: ${getFriendlyCampaignName(campaign.spec.campaign_name)}`);
+        // Clear the state from location to prevent reloading on re-render
+        window.history.replaceState({}, document.title);
+      } else {
+        setError("Campaign not found");
+      }
+    }
+  }, [location.state]);
 
   // Check backend health on mount and periodically
   useEffect(() => {
