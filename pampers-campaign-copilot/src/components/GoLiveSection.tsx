@@ -1,25 +1,35 @@
-import { useState } from "react";
-import { mockSpec } from "@/lib/mockData";
 import { Rocket } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+import type { ChatResponse } from "@/lib/api";
 
-export const GoLiveSection = () => {
-  const [isLaunching, setIsLaunching] = useState(false);
+interface GoLiveSectionProps {
+  onGoLive: () => void;
+  loading: boolean;
+  disabled?: boolean;
+  spec?: ChatResponse["spec"] | null;
+}
+
+export const GoLiveSection = ({ onGoLive, loading, disabled, spec }: GoLiveSectionProps) => {
   const { toast } = useToast();
 
   const handleLaunch = async () => {
-    setIsLaunching(true);
-
-    // Simulate API call to /api/go-live
-    setTimeout(() => {
-      setIsLaunching(false);
+    if (disabled || loading) return;
+    
+    try {
+      await onGoLive();
       toast({
         title: "Campaign Launched Successfully! 🚀",
         description: "Your campaign is now live and running across all markets.",
         className: "bg-success text-white",
       });
-    }, 2000);
+    } catch (err) {
+      toast({
+        title: "Launch Failed",
+        description: err instanceof Error ? err.message : "Failed to launch campaign",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
@@ -31,35 +41,37 @@ export const GoLiveSection = () => {
         </p>
       </div>
 
-      <div className="bg-background p-5 rounded-xl mb-6">
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <p className="text-xs text-muted-foreground mb-1">Campaign Name</p>
-            <p className="text-sm font-medium text-foreground">{mockSpec.name}</p>
-          </div>
-          <div>
-            <p className="text-xs text-muted-foreground mb-1">Markets</p>
-            <p className="text-sm font-medium text-foreground">{mockSpec.markets.join(", ")}</p>
-          </div>
-          <div>
-            <p className="text-xs text-muted-foreground mb-1">Duration</p>
-            <p className="text-sm font-medium text-foreground">{mockSpec.duration}</p>
-          </div>
-          <div>
-            <p className="text-xs text-muted-foreground mb-1">Channels</p>
-            <p className="text-sm font-medium text-foreground">{mockSpec.channels.join(", ")}</p>
+      {spec && (
+        <div className="bg-background p-5 rounded-xl mb-6">
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <p className="text-xs text-muted-foreground mb-1">Campaign Name</p>
+              <p className="text-sm font-medium text-foreground">{spec.campaign_name}</p>
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground mb-1">Markets</p>
+              <p className="text-sm font-medium text-foreground">{spec.markets.join(", ")}</p>
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground mb-1">Duration</p>
+              <p className="text-sm font-medium text-foreground">{spec.duration}</p>
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground mb-1">Channels</p>
+              <p className="text-sm font-medium text-foreground">{spec.channels.join(", ")}</p>
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
       <Button
         onClick={handleLaunch}
-        disabled={isLaunching}
+        disabled={disabled || loading}
         size="lg"
         className="w-full bg-accent hover:bg-accent/90 text-accent-foreground"
       >
         <Rocket className="w-5 h-5 mr-2" />
-        {isLaunching ? "Launching..." : "🚀 Launch Campaign"}
+        {loading ? "Launching..." : "🚀 Launch Campaign"}
       </Button>
     </div>
   );
