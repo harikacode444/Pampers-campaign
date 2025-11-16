@@ -1,4 +1,3 @@
-import { Rocket } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { getFriendlyCampaignName } from "@/lib/campaignNames";
@@ -82,7 +81,6 @@ export const GoLiveSection = ({ onGoLive, loading, disabled, spec, qa }: GoLiveS
         className="w-full bg-accent hover:bg-accent/90 text-accent-foreground"
         title={qa && !qa.passed && qa.issues.length > 0 ? "Fix QA errors before launching" : "Launch campaign"}
       >
-        <Rocket className="w-5 h-5 mr-2" />
         {loading ? "Launching..." : "🚀 Launch Campaign"}
       </Button>
     </div>

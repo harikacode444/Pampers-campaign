@@ -257,18 +257,6 @@ const Index = () => {
             </div>
           )}
 
-          {/* Debug info - remove in production */}
-          {process.env.NODE_ENV === "development" && (
-            <div className="bg-muted/50 border border-border rounded-xl p-4 text-xs">
-              <p className="font-semibold mb-2">Debug Info:</p>
-              <p>Loading: {loading ? "Yes" : "No"}</p>
-              <p>Has Spec: {spec ? "Yes" : "No"}</p>
-              <p>Has Journey: {journey ? "Yes" : "No"}</p>
-              <p>Has Messages: {messages ? "Yes" : "No"}</p>
-              <p>Has QA: {qa ? "Yes" : "No"}</p>
-              <p>API Base URL: http://localhost:4000</p>
-            </div>
-          )}
         </div>
       </main>
     </div>
